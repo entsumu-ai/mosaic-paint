@@ -55,6 +55,10 @@ let initialZoomLevel = 1.0;
 let isPinching = false;
 let originalCanvas = null;
 let originalCtx = null;
+let initialTouchCenterX = 0;
+let initialTouchCenterY = 0;
+let initialScrollLeft = 0;
+let initialScrollTop = 0;
 
 let isDrawing = false;
 let canvasStartX = 0;
@@ -1125,11 +1129,22 @@ function handleTouchStart(e) {
     if (selectionBox) selectionBox.style.display = 'none'; // 範囲選択中の場合はクリア
     hideTouchCursor();
     
-    // 2つのタッチ点の間隔を計算
+    // 2つのタッチ点の間隔を計算（ズーム用）
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     initialTouchDistance = Math.hypot(dx, dy);
     initialZoomLevel = zoomLevel;
+
+    // 2つのタッチ点の中心座標（重心）を計算（パン移動用）
+    initialTouchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    initialTouchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+    // ワークスペースの現在のスクロール位置を記録
+    const workspace = document.querySelector('.workspace');
+    if (workspace) {
+      initialScrollLeft = workspace.scrollLeft;
+      initialScrollTop = workspace.scrollTop;
+    }
     
     e.preventDefault();
   } else if (e.touches.length === 1 && !isPinching) {
@@ -1152,7 +1167,7 @@ function handleTouchStart(e) {
 
 function handleTouchMove(e) {
   if (e.touches.length === 2 && isPinching) {
-    // ピンチズーム処理
+    // --- 1. ピンチズーム処理 ---
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const currentDistance = Math.hypot(dx, dy);
@@ -1163,6 +1178,20 @@ function handleTouchMove(e) {
       zoomLevel = Math.max(0.2, Math.min(4.0, initialZoomLevel * scale));
       applyZoom();
     }
+
+    // --- 2. パン移動（スクロール）処理 ---
+    const currentCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const currentCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    
+    const deltaX = currentCenterX - initialTouchCenterX;
+    const deltaY = currentCenterY - initialTouchCenterY;
+    
+    const workspace = document.querySelector('.workspace');
+    if (workspace) {
+      workspace.scrollLeft = initialScrollLeft - deltaX;
+      workspace.scrollTop = initialScrollTop - deltaY;
+    }
+    
     e.preventDefault();
   } else if (e.touches.length === 1 && isDrawing && !isPinching) {
     // 通常のなぞり描き・スワイプ
@@ -1227,7 +1256,9 @@ function updateTouchCursor(clientX, clientY) {
   if (!touchCursor) return;
   if (currentTool === 'brush' || currentTool === 'eraser' || currentTool === 'mosaic-brush') {
     const canvasRect = canvas.getBoundingClientRect();
-    const displaySize = brushSize * (canvasRect.width / canvas.width);
+    const baseSize = brushSize * (canvasRect.width / canvas.width);
+    // 指の腹で円が完全に隠れてしまわないように、表示サイズにゲイン（+30px）を足し、最小でも40pxを確保
+    const displaySize = Math.max(40, baseSize + 30);
     
     touchCursor.style.width = `${displaySize}px`;
     touchCursor.style.height = `${displaySize}px`;
