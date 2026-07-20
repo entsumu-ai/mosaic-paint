@@ -1066,6 +1066,7 @@ function handleTouchStart(e) {
     isPinching = true;
     isDrawing = false; // 描画をキャンセル
     if (selectionBox) selectionBox.style.display = 'none'; // 範囲選択中の場合はクリア
+    hideTouchCursor();
     
     // 2つのタッチ点の間隔を計算
     const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -1087,6 +1088,7 @@ function handleTouchStart(e) {
     if (currentTool !== 'text') {
       e.preventDefault();
     }
+    updateTouchCursor(touch.clientX, touch.clientY);
     handleMouseDown(pseudoEvent);
   }
 }
@@ -1117,11 +1119,13 @@ function handleTouchMove(e) {
     if (currentTool !== 'text') {
       e.preventDefault();
     }
+    updateTouchCursor(touch.clientX, touch.clientY);
     handleMouseMove(pseudoEvent);
   }
 }
 
 function handleTouchEnd(e) {
+  hideTouchCursor();
   if (isPinching) {
     // 指が離れたとき、ピンチを終了
     if (e.touches.length < 2) {
@@ -1149,12 +1153,40 @@ function handleTouchEnd(e) {
 }
 
 function handleTouchCancel(e) {
+  hideTouchCursor();
   // システム介入や画面外への指離脱などでタッチがキャンセルされた場合は、全て強制リセット
   isPinching = false;
   isDrawing = false;
   initialTouchDistance = 0;
   if (selectionBox) {
     selectionBox.style.display = 'none';
+  }
+}
+
+// --- Touch Cursor (Pointer) Helper Functions ---
+const touchCursor = document.getElementById('touch-brush-cursor');
+
+function updateTouchCursor(clientX, clientY) {
+  if (!touchCursor) return;
+  if (currentTool === 'brush' || currentTool === 'eraser' || currentTool === 'mosaic-brush') {
+    const canvasRect = canvas.getBoundingClientRect();
+    const displaySize = brushSize * (canvasRect.width / canvas.width);
+    
+    touchCursor.style.width = `${displaySize}px`;
+    touchCursor.style.height = `${displaySize}px`;
+    
+    // 指の真下に表示
+    touchCursor.style.left = `${clientX}px`;
+    touchCursor.style.top = `${clientY}px`;
+    touchCursor.style.display = 'block';
+  } else {
+    touchCursor.style.display = 'none';
+  }
+}
+
+function hideTouchCursor() {
+  if (touchCursor) {
+    touchCursor.style.display = 'none';
   }
 }
 

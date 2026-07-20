@@ -280,6 +280,10 @@ canvas {
   display: none;
 }
 
+.touch-brush-cursor {
+  display: none;
+}
+
 .panel-section {
   display: flex;
   flex-direction: column;
@@ -904,6 +908,19 @@ footer {
 
   .shortcuts-info {
     display: none; /* スマホではショートカット案内を隠す */
+  }
+
+  /* スマホ用タッチプレビューサークル */
+  .touch-brush-cursor {
+    position: fixed;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 0 6px rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.15);
+    display: none;
+    z-index: 10000;
+    transform: translate(-50%, -50%);
   }
 }
 
