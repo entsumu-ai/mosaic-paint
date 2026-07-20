@@ -53,6 +53,8 @@ let zoomLevel = 1.0;
 let initialTouchDistance = 0;
 let initialZoomLevel = 1.0;
 let isPinching = false;
+let originalCanvas = null;
+let originalCtx = null;
 
 let isDrawing = false;
 let canvasStartX = 0;
@@ -343,6 +345,13 @@ function loadImage(src) {
     canvas.width = img.width;
     canvas.height = img.height;
     
+    // Create original canvas for eraser restore feature
+    originalCanvas = document.createElement('canvas');
+    originalCanvas.width = img.width;
+    originalCanvas.height = img.height;
+    originalCtx = originalCanvas.getContext('2d');
+    originalCtx.drawImage(img, 0, 0);
+    
     // Draw image onto canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
@@ -378,6 +387,14 @@ function loadImage(src) {
 function createNewCanvas(width, height) {
   canvas.width = width;
   canvas.height = height;
+  
+  // Create original canvas for eraser restore feature
+  originalCanvas = document.createElement('canvas');
+  originalCanvas.width = width;
+  originalCanvas.height = height;
+  originalCtx = originalCanvas.getContext('2d');
+  originalCtx.fillStyle = '#ffffff';
+  originalCtx.fillRect(0, 0, width, height);
   
   // Fill background with white
   ctx.fillStyle = '#ffffff';
@@ -735,6 +752,7 @@ function handleMouseUp(e) {
       btnCropOutside.disabled = false;
 
       // スマホ表示時、選択が完了したら自動的に設定パネル（キリトリボタンがある場所）を開く
+      // スマホ表示時、選択が完了したら自動的に設定パネル（キリトリボタンがある場所）を開く
       const propertiesPanel = document.querySelector('.properties-panel');
       if (propertiesPanel) {
         propertiesPanel.classList.add('open');
@@ -745,6 +763,10 @@ function handleMouseUp(e) {
       btnCropOutside.disabled = true;
       selectedArea = null;
     }
+  } else if (currentTool === 'eraser') {
+    // 復元消しゴム処理を走り込ませてからヒストリー保存
+    restoreOriginalPixels();
+    saveHistory();
   } else {
     // Save history for normal drawing tools on mouse up
     saveHistory();
@@ -760,10 +782,13 @@ function saveHistory() {
   }
   
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const origImgData = originalCtx ? originalCtx.getImageData(0, 0, canvas.width, canvas.height) : null;
+  
   history.push({
     width: canvas.width,
     height: canvas.height,
-    imgData: imgData
+    imgData: imgData,
+    origImgData: origImgData
   });
   
   if (history.length > MAX_HISTORY) {
@@ -789,6 +814,15 @@ function undo() {
     canvas.height = state.height;
     ctx.putImageData(state.imgData, 0, 0);
     
+    // originalCanvas も同期
+    if (state.origImgData) {
+      originalCanvas = document.createElement('canvas');
+      originalCanvas.width = state.width;
+      originalCanvas.height = state.height;
+      originalCtx = originalCanvas.getContext('2d');
+      originalCtx.putImageData(state.origImgData, 0, 0);
+    }
+    
     statusSize.textContent = `サイズ: ${state.width} x ${state.height}`;
     updateHistoryControls();
     showToast('元に戻しました');
@@ -810,6 +844,15 @@ function redo() {
     canvas.width = state.width;
     canvas.height = state.height;
     ctx.putImageData(state.imgData, 0, 0);
+    
+    // originalCanvas も同期
+    if (state.origImgData) {
+      originalCanvas = document.createElement('canvas');
+      originalCanvas.width = state.width;
+      originalCanvas.height = state.height;
+      originalCtx = originalCanvas.getContext('2d');
+      originalCtx.putImageData(state.origImgData, 0, 0);
+    }
     
     statusSize.textContent = `サイズ: ${state.width} x ${state.height}`;
     updateHistoryControls();
@@ -927,6 +970,13 @@ function handleCropClick() {
   btnCropOutside.disabled = true;
   selectedArea = null;
 
+  // originalCanvas も新しいサイズに更新
+  originalCanvas = document.createElement('canvas');
+  originalCanvas.width = canvas.width;
+  originalCanvas.height = canvas.height;
+  originalCtx = originalCanvas.getContext('2d');
+  originalCtx.drawImage(canvas, 0, 0);
+
   saveHistory();
   showToast('範囲内をキリトリしました');
 }
@@ -957,6 +1007,13 @@ function handleCropOutsideClick() {
   btnCrop.disabled = true;
   btnCropOutside.disabled = true;
   selectedArea = null;
+
+  // originalCanvas も新しいサイズに更新
+  originalCanvas = document.createElement('canvas');
+  originalCanvas.width = canvas.width;
+  originalCanvas.height = canvas.height;
+  originalCtx = originalCanvas.getContext('2d');
+  originalCtx.drawImage(canvas, 0, 0);
 
   saveHistory();
   showToast('範囲外をキリトリしました');
@@ -1187,6 +1244,34 @@ function updateTouchCursor(clientX, clientY) {
 function hideTouchCursor() {
   if (touchCursor) {
     touchCursor.style.display = 'none';
+  }
+}
+
+function restoreOriginalPixels() {
+  if (!originalCanvas || !canvas.width || !canvas.height) return;
+  
+  const currImgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const origImgData = originalCtx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  const currData = currImgData.data;
+  const origData = origImgData.data;
+  const len = currData.length;
+  
+  let modified = false;
+  
+  // アルファ値が255未満（消しゴムで消された箇所）を元画像のピクセルで復元
+  for (let i = 3; i < len; i += 4) {
+    if (currData[i] < 255) {
+      currData[i - 3] = origData[i - 3]; // R
+      currData[i - 2] = origData[i - 2]; // G
+      currData[i - 1] = origData[i - 1]; // B
+      currData[i] = origData[i];         // A
+      modified = true;
+    }
+  }
+  
+  if (modified) {
+    ctx.putImageData(currImgData, 0, 0);
   }
 }
 
