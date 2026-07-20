@@ -225,16 +225,15 @@ header {
 .workspace {
   flex: 1;
   background-color: var(--bg-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 30px;
+  display: block; /* Flex のはみ出しによる上部・左部のスクロール不可バグを防ぐため block に変更 */
+  padding: 40px;
   overflow: auto;
   position: relative;
 }
 
 .canvas-container {
   position: relative;
+  margin: auto; /* display: block 親要素の中で、小さい時は中央配置、大きい時は左上起点で全領域スクロール可能にする魔法の記述 */
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
