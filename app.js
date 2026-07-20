@@ -50,6 +50,9 @@ let brushSize = 10;
 let mosaicSize = 6;
 let mosaicType = 'pixel';
 let zoomLevel = 1.0;
+let initialTouchDistance = 0;
+let initialZoomLevel = 1.0;
+let isPinching = false;
 
 let isDrawing = false;
 let canvasStartX = 0;
@@ -342,8 +345,8 @@ function loadImage(src) {
     // Status info update
     statusSize.textContent = `サイズ: ${img.width} x ${img.height}`;
 
-    // Reset zoom state
-    zoomLevel = 1.0;
+    // Reset zoom state to fit screen width/height
+    zoomLevel = getFitZoomLevel(img.width, img.height);
     applyZoom();
     btnZoomIn.disabled = false;
     btnZoomOut.disabled = false;
@@ -376,8 +379,8 @@ function createNewCanvas(width, height) {
   
   statusSize.textContent = `サイズ: ${width} x ${height}`;
 
-  // Reset zoom state
-  zoomLevel = 1.0;
+  // Reset zoom state to fit screen width/height
+  zoomLevel = getFitZoomLevel(width, height);
   applyZoom();
   btnZoomIn.disabled = false;
   btnZoomOut.disabled = false;
@@ -1041,7 +1044,21 @@ function applyZoom() {
 
 // --- Touch Event Handlers for Mobile Devices ---
 function handleTouchStart(e) {
-  if (e.touches.length > 0) {
+  if (e.touches.length === 2) {
+    // 2本指タッチの場合：ピンチズーム開始
+    isPinching = true;
+    isDrawing = false; // 描画をキャンセル
+    if (selectionBox) selectionBox.style.display = 'none'; // 範囲選択中の場合はクリア
+    
+    // 2つのタッチ点の間隔を計算
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    initialTouchDistance = Math.hypot(dx, dy);
+    initialZoomLevel = zoomLevel;
+    
+    e.preventDefault();
+  } else if (e.touches.length === 1 && !isPinching) {
+    // 1本指タッチの場合：通常の描画・選択
     const touch = e.touches[0];
     const pseudoEvent = {
       clientX: touch.clientX,
@@ -1058,7 +1075,21 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-  if (isDrawing && e.touches.length > 0) {
+  if (e.touches.length === 2 && isPinching) {
+    // ピンチズーム処理
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const currentDistance = Math.hypot(dx, dy);
+    
+    if (initialTouchDistance > 0) {
+      const scale = currentDistance / initialTouchDistance;
+      // 0.2倍〜4.0倍の範囲で拡大縮小
+      zoomLevel = Math.max(0.2, Math.min(4.0, initialZoomLevel * scale));
+      applyZoom();
+    }
+    e.preventDefault();
+  } else if (e.touches.length === 1 && isDrawing && !isPinching) {
+    // 通常のなぞり描き・スワイプ
     const touch = e.touches[0];
     const pseudoEvent = {
       clientX: touch.clientX,
@@ -1074,7 +1105,14 @@ function handleTouchMove(e) {
 }
 
 function handleTouchEnd(e) {
-  if (isDrawing) {
+  if (isPinching) {
+    // 指が離れたとき、ピンチを終了
+    if (e.touches.length < 2) {
+      isPinching = false;
+      initialTouchDistance = 0;
+    }
+  } else if (isDrawing) {
+    // 通常の描画終了
     const touch = e.changedTouches.length > 0 ? e.changedTouches[0] : null;
     const pseudoEvent = {
       clientX: touch ? touch.clientX : containerCurrX,
@@ -1084,6 +1122,23 @@ function handleTouchEnd(e) {
     };
     handleMouseUp(pseudoEvent);
   }
+}
+
+function getFitZoomLevel(w, h) {
+  const workspace = document.querySelector('.workspace');
+  if (!workspace) return 1.0;
+  
+  // マージン（上下左右40px）を引いた実表示エリア
+  const maxW = Math.max(200, workspace.clientWidth - 40);
+  const maxH = Math.max(200, workspace.clientHeight - 40);
+  
+  // はみ出さないスケールを算出
+  const scaleX = maxW / w;
+  const scaleY = maxH / h;
+  const fitScale = Math.min(scaleX, scaleY);
+  
+  // 100% (1.0) を上限とし、0.2未満にならないように
+  return Math.max(0.2, Math.min(1.0, fitScale));
 }
 
 // Initialize Application
