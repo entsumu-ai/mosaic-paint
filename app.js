@@ -189,6 +189,15 @@ function initEvents() {
   window.addEventListener('touchmove', handleTouchMove, { passive: false });
   window.addEventListener('touchend', handleTouchEnd, { passive: false });
 
+  // Mobile Panel Toggle
+  const mobilePanelToggle = document.getElementById('mobile-panel-toggle');
+  const propertiesPanel = document.querySelector('.properties-panel');
+  if (mobilePanelToggle && propertiesPanel) {
+    mobilePanelToggle.addEventListener('click', () => {
+      propertiesPanel.classList.toggle('open');
+    });
+  }
+
   updateCursor();
 }
 

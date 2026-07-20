@@ -151,74 +151,82 @@
 
     <!-- Properties Panel (Right) -->
     <aside class="properties-panel">
-      <!-- Brush Settings -->
-      <div class="panel-section">
-        <h3 class="panel-title">ツール設定</h3>
-        
-        <!-- Brush Size -->
-        <div class="setting-group" id="size-setting-group">
-          <div class="setting-label">
-            <span>サイズ (太さ / 文字)</span>
-            <span class="setting-value" id="brush-size-val">10px</span>
-          </div>
-          <input type="range" id="brush-size" min="1" max="50" value="10">
-        </div>
-
-        <!-- Mosaic Size -->
-        <div class="setting-group" id="mosaic-setting-group">
-          <div class="setting-label">
-            <span>モザイクの粗さ</span>
-            <span class="setting-value" id="mosaic-size-val">6px</span>
-          </div>
-          <input type="range" id="mosaic-size" min="2" max="10" value="6">
-        </div>
-
-        <!-- Mosaic Type -->
-        <div class="setting-group" id="mosaic-type-group" style="margin-top: 14px;">
-          <div class="setting-label">
-            <span>モザイクの種類</span>
-          </div>
-          <select id="mosaic-type" class="preset-select">
-            <option value="pixel">ピクセル (通常)</option>
-            <option value="blur">摺りガラス (ぼかし)</option>
-            <option value="dot">ドット (丸型)</option>
-          </select>
-        </div>
+      <!-- モバイル表示時の開閉ヘッダー -->
+      <div class="mobile-panel-toggle" id="mobile-panel-toggle">
+        <span class="toggle-title"><i data-lucide="sliders"></i> ツール設定・カラー</span>
+        <i data-lucide="chevron-down" class="toggle-arrow" id="panel-toggle-arrow"></i>
       </div>
 
-      <!-- Color Settings -->
-      <div class="panel-section" id="color-section">
-        <h3 class="panel-title">カラー</h3>
-        <div class="color-picker-wrapper">
-          <div class="color-input-container">
-            <input type="color" id="color-picker" value="#3b82f6">
+      <div class="properties-content" id="properties-content">
+        <!-- Brush Settings -->
+        <div class="panel-section">
+          <h3 class="panel-title">ツール設定</h3>
+          
+          <!-- Brush Size -->
+          <div class="setting-group" id="size-setting-group">
+            <div class="setting-label">
+              <span>サイズ (太さ / 文字)</span>
+              <span class="setting-value" id="brush-size-val">10px</span>
+            </div>
+            <input type="range" id="brush-size" min="1" max="50" value="10">
           </div>
-          <div class="preset-colors">
-            <button class="preset-color-btn active" style="background-color: #3b82f6;" data-color="#3b82f6"></button>
-            <button class="preset-color-btn" style="background-color: #ef4444;" data-color="#ef4444"></button>
-            <button class="preset-color-btn" style="background-color: #10b981;" data-color="#10b981"></button>
-            <button class="preset-color-btn" style="background-color: #f59e0b;" data-color="#f59e0b"></button>
-            <button class="preset-color-btn" style="background-color: #8b5cf6;" data-color="#8b5cf6"></button>
-            <button class="preset-color-btn" style="background-color: #ec4899;" data-color="#ec4899"></button>
-            <button class="preset-color-btn" style="background-color: #06b6d4;" data-color="#06b6d4"></button>
-            <button class="preset-color-btn" style="background-color: #ffffff;" data-color="#ffffff"></button>
-            <button class="preset-color-btn" style="background-color: #9ca3af;" data-color="#9ca3af"></button>
-            <button class="preset-color-btn" style="background-color: #111827;" data-color="#111827"></button>
+
+          <!-- Mosaic Size -->
+          <div class="setting-group" id="mosaic-setting-group">
+            <div class="setting-label">
+              <span>モザイクの粗さ</span>
+              <span class="setting-value" id="mosaic-size-val">6px</span>
+            </div>
+            <input type="range" id="mosaic-size" min="2" max="10" value="6">
+          </div>
+
+          <!-- Mosaic Type -->
+          <div class="setting-group" id="mosaic-type-group" style="margin-top: 14px;">
+            <div class="setting-label">
+              <span>モザイクの種類</span>
+            </div>
+            <select id="mosaic-type" class="preset-select">
+              <option value="pixel">ピクセル (通常)</option>
+              <option value="blur">摺りガラス (ぼかし)</option>
+              <option value="dot">ドット (丸型)</option>
+            </select>
           </div>
         </div>
-      </div>
 
-      <!-- Selection Actions (Crop) -->
-      <div class="panel-section" id="crop-section" style="display: none;">
-        <h3 class="panel-title">選択範囲の操作</h3>
-        <button class="primary-btn" id="btn-crop">
-          <span class="btn-icon"><i data-lucide="crop"></i></span>
-          範囲内をキリトリ
-        </button>
-        <button class="secondary-btn" id="btn-crop-outside" style="margin-top: 8px;">
-          <span class="btn-icon"><i data-lucide="scissors"></i></span>
-          範囲外をキリトリ
-        </button>
+        <!-- Color Settings -->
+        <div class="panel-section" id="color-section">
+          <h3 class="panel-title">カラー</h3>
+          <div class="color-picker-wrapper">
+            <div class="color-input-container">
+              <input type="color" id="color-picker" value="#3b82f6">
+            </div>
+            <div class="preset-colors">
+              <button class="preset-color-btn active" style="background-color: #3b82f6;" data-color="#3b82f6"></button>
+              <button class="preset-color-btn" style="background-color: #ef4444;" data-color="#ef4444"></button>
+              <button class="preset-color-btn" style="background-color: #10b981;" data-color="#10b981"></button>
+              <button class="preset-color-btn" style="background-color: #f59e0b;" data-color="#f59e0b"></button>
+              <button class="preset-color-btn" style="background-color: #8b5cf6;" data-color="#8b5cf6"></button>
+              <button class="preset-color-btn" style="background-color: #ec4899;" data-color="#ec4899"></button>
+              <button class="preset-color-btn" style="background-color: #06b6d4;" data-color="#06b6d4"></button>
+              <button class="preset-color-btn" style="background-color: #ffffff;" data-color="#ffffff"></button>
+              <button class="preset-color-btn" style="background-color: #9ca3af;" data-color="#9ca3af"></button>
+              <button class="preset-color-btn" style="background-color: #111827;" data-color="#111827"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selection Actions (Crop) -->
+        <div class="panel-section" id="crop-section" style="display: none;">
+          <h3 class="panel-title">選択範囲の操作</h3>
+          <button class="primary-btn" id="btn-crop">
+            <span class="btn-icon"><i data-lucide="crop"></i></span>
+            範囲内をキリトリ
+          </button>
+          <button class="secondary-btn" id="btn-crop-outside" style="margin-top: 8px;">
+            <span class="btn-icon"><i data-lucide="scissors"></i></span>
+            範囲外をキリトリ
+          </button>
+        </div>
       </div>
     </aside>
 
