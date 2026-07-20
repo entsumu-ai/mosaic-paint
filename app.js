@@ -125,8 +125,20 @@ function initEvents() {
   btnRedo.addEventListener('click', redo);
   btnClear.addEventListener('click', confirmClearCanvas);
   btnSave.addEventListener('click', saveImage);
-  btnCrop.addEventListener('click', handleCropClick);
-  btnCropOutside.addEventListener('click', handleCropOutsideClick);
+  const onCropClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleCropClick();
+  };
+  const onCropOutsideClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleCropOutsideClick();
+  };
+  btnCrop.addEventListener('click', onCropClick);
+  btnCrop.addEventListener('touchstart', onCropClick, { passive: false });
+  btnCropOutside.addEventListener('click', onCropOutsideClick);
+  btnCropOutside.addEventListener('touchstart', onCropOutsideClick, { passive: false });
 
   // Drag and Drop Events
   workspaceArea.addEventListener('dragover', (e) => {
@@ -191,6 +203,7 @@ function initEvents() {
   canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
   window.addEventListener('touchmove', handleTouchMove, { passive: false });
   window.addEventListener('touchend', handleTouchEnd, { passive: false });
+  window.addEventListener('touchcancel', handleTouchCancel, { passive: false });
 
   // Mobile Panel Toggle
   const mobilePanelToggle = document.getElementById('mobile-panel-toggle');
@@ -722,6 +735,12 @@ function handleMouseUp(e) {
       selectedArea = { x: cX, y: cY, w: cW, h: cH };
       btnCrop.disabled = false;
       btnCropOutside.disabled = false;
+
+      // スマホ表示時、選択が完了したら自動的に設定パネル（キリトリボタンがある場所）を開く
+      const propertiesPanel = document.querySelector('.properties-panel');
+      if (propertiesPanel) {
+        propertiesPanel.classList.add('open');
+      }
     } else {
       selectionBox.style.display = 'none';
       btnCrop.disabled = true;
@@ -1121,6 +1140,23 @@ function handleTouchEnd(e) {
       stopPropagation: () => e.stopPropagation()
     };
     handleMouseUp(pseudoEvent);
+  }
+  
+  // 安全装置：画面に触れている指が0本になったら全ての状態フラグを強制リセット
+  if (e.touches.length === 0) {
+    isPinching = false;
+    isDrawing = false;
+    initialTouchDistance = 0;
+  }
+}
+
+function handleTouchCancel(e) {
+  // システム介入や画面外への指離脱などでタッチがキャンセルされた場合は、全て強制リセット
+  isPinching = false;
+  isDrawing = false;
+  initialTouchDistance = 0;
+  if (selectionBox) {
+    selectionBox.style.display = 'none';
   }
 }
 
