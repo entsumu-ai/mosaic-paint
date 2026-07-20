@@ -193,9 +193,13 @@ function initEvents() {
   const mobilePanelToggle = document.getElementById('mobile-panel-toggle');
   const propertiesPanel = document.querySelector('.properties-panel');
   if (mobilePanelToggle && propertiesPanel) {
-    mobilePanelToggle.addEventListener('click', () => {
+    const togglePanel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       propertiesPanel.classList.toggle('open');
-    });
+    };
+    mobilePanelToggle.addEventListener('click', togglePanel);
+    mobilePanelToggle.addEventListener('touchstart', togglePanel, { passive: false });
   }
 
   updateCursor();
