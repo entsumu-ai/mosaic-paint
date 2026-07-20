@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MosaicPaint - モザイク機能付きペイントアプリ</title>
+  <link rel="icon" href="app_icon.png">
+  <link rel="stylesheet" href="style.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <i data-lucide="paint-brush"></i>
+      <span>MosaicPaint</span>
+    </div>
+    <div class="history-controls">
+      <button class="header-btn" id="btn-undo" title="戻る (Ctrl+Z)" disabled>
+        <i data-lucide="undo-2"></i>
+        <span>戻る</span>
+      </button>
+      <button class="header-btn" id="btn-redo" title="進む (Ctrl+Y)" disabled>
+        <span>進む</span>
+        <i data-lucide="redo-2"></i>
+      </button>
+    </div>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-controls" style="display: flex; align-items: center; gap: 8px;">
+      <button class="header-btn" id="btn-zoom-out" title="縮小 (ホイール下)" disabled>
+        <i data-lucide="zoom-out"></i>
+      </button>
+      <span id="zoom-val" style="min-width: 48px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary);">100%</span>
+      <button class="header-btn" id="btn-zoom-in" title="拡大 (ホイール上)" disabled>
+        <i data-lucide="zoom-in"></i>
+      </button>
+      <button class="header-btn" id="btn-zoom-reset" title="等倍 (100%)" disabled>
+        <i data-lucide="maximize-2"></i>
+      </button>
+    </div>
+
+    <div class="shortcuts-info">
+      Ctrl + V: 貼り付け | Ctrl + Z: 戻る | Ctrl + Y: 進む | Ctrl + S: 保存
+    </div>
+  </header>
+
+  <!-- Main Workspace & Panels -->
+  <div class="main-container">
+    
+    <!-- Sidebar (Tools) -->
+    <aside class="sidebar">
+      <!-- File Open (Hidden Input) -->
+      <input type="file" id="file-input" accept="image/*" style="display: none;">
+      <button class="tool-btn" id="btn-open-file" data-tooltip="画像を開く">
+        <i data-lucide="folder-open"></i>
+      </button>
+      
+      <div class="divider"></div>
+      
+      <!-- Brush Tools -->
+      <button class="tool-btn active" id="tool-brush" data-tool="brush" data-tooltip="ブラシ">
+        <i data-lucide="brush"></i>
+      </button>
+      <button class="tool-btn" id="tool-eraser" data-tool="eraser" data-tooltip="消しゴム">
+        <i data-lucide="eraser"></i>
+      </button>
+      
+      <!-- Mosaic Tools -->
+      <button class="tool-btn" id="tool-mosaic-brush" data-tool="mosaic-brush" data-tooltip="モザイクブラシ">
+        <i data-lucide="sparkles"></i>
+      </button>
+      <button class="tool-btn" id="tool-mosaic-rect" data-tool="mosaic-rect" data-tooltip="範囲モザイク (ドラッグ)">
+        <i data-lucide="scan"></i>
+      </button>
+      
+      <!-- Shapes -->
+      <button class="tool-btn" id="tool-rect" data-tool="rect" data-tooltip="長方形描画">
+        <i data-lucide="square"></i>
+      </button>
+      <button class="tool-btn" id="tool-ellipse" data-tool="ellipse" data-tooltip="楕円描画">
+        <i data-lucide="circle"></i>
+      </button>
+      
+      <!-- Selection & Text -->
+      <button class="tool-btn" id="tool-select" data-tool="select" data-tooltip="範囲選択 (キリトリ用)">
+        <i data-lucide="crop"></i>
+      </button>
+      <button class="tool-btn" id="tool-text" data-tool="text" data-tooltip="テキスト挿入">
+        <i data-lucide="type"></i>
+      </button>
+
+      <div class="divider"></div>
+      
+      <!-- Actions -->
+      <button class="tool-btn" id="btn-clear" data-tooltip="キャンバスをクリア" disabled>
+        <i data-lucide="trash-2"></i>
+      </button>
+      
+      <div class="divider"></div>
+      
+      <!-- Export -->
+      <button class="tool-btn" id="btn-save" data-tooltip="画像を保存 (Ctrl+S)" disabled>
+        <i data-lucide="download"></i>
+      </button>
+    </aside>
+
+    <!-- Canvas Area -->
+    <main class="workspace" id="workspace-area">
+      <!-- Drag & Drop Overlay -->
+      <div class="import-overlay" id="import-overlay">
+        <div class="import-content">
+          <div class="import-icon">
+            <i data-lucide="image-plus"></i>
+          </div>
+          <div class="import-title">画像をここにドロップ</div>
+          <div class="import-subtitle">PNG, JPEG などの画像をドロップして編集を開始します。</div>
+        </div>
+      </div>
+
+      <!-- Welcome Screen (When Canvas is Empty) -->
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-logo">
+          <img src="app_icon.png" alt="MosaicPaint" style="width:80px;height:80px;border-radius:20px;">
+        </div>
+        <h2 class="welcome-title">MosaicPaint</h2>
+        <p class="welcome-text">
+          画像を読み込んでモザイク処理やペイントができる軽量ツールです。<br>
+          Snipping Toolなどからコピーした画像を<strong>Ctrl + V で直接貼り付ける</strong>ことも可能です。
+        </p>
+        <div class="action-buttons">
+          <button class="primary-btn" id="welcome-btn-open">
+            <span class="btn-icon"><i data-lucide="folder-open"></i></span>
+            画像を開く
+          </button>
+          <button class="secondary-btn" id="welcome-btn-new">
+            <span class="btn-icon"><i data-lucide="file-plus"></i></span>
+            新規キャンバス (800x600)
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Container -->
+      <div class="canvas-container" id="canvas-container" style="display: none;">
+        <canvas id="paint-canvas"></canvas>
+        <div class="selection-box" id="selection-box"></div>
+      </div>
+    </main>
+
+    <!-- Properties Panel (Right) -->
+    <aside class="properties-panel">
+      <!-- Brush Settings -->
+      <div class="panel-section">
+        <h3 class="panel-title">ツール設定</h3>
+        
+        <!-- Brush Size -->
+        <div class="setting-group" id="size-setting-group">
+          <div class="setting-label">
+            <span>サイズ (太さ / 文字)</span>
+            <span class="setting-value" id="brush-size-val">10px</span>
+          </div>
+          <input type="range" id="brush-size" min="1" max="50" value="10">
+        </div>
+
+        <!-- Mosaic Size -->
+        <div class="setting-group" id="mosaic-setting-group">
+          <div class="setting-label">
+            <span>モザイクの粗さ</span>
+            <span class="setting-value" id="mosaic-size-val">6px</span>
+          </div>
+          <input type="range" id="mosaic-size" min="2" max="10" value="6">
+        </div>
+
+        <!-- Mosaic Type -->
+        <div class="setting-group" id="mosaic-type-group" style="margin-top: 14px;">
+          <div class="setting-label">
+            <span>モザイクの種類</span>
+          </div>
+          <select id="mosaic-type" class="preset-select">
+            <option value="pixel">ピクセル (通常)</option>
+            <option value="blur">摺りガラス (ぼかし)</option>
+            <option value="dot">ドット (丸型)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Color Settings -->
+      <div class="panel-section" id="color-section">
+        <h3 class="panel-title">カラー</h3>
+        <div class="color-picker-wrapper">
+          <div class="color-input-container">
+            <input type="color" id="color-picker" value="#3b82f6">
+          </div>
+          <div class="preset-colors">
+            <button class="preset-color-btn active" style="background-color: #3b82f6;" data-color="#3b82f6"></button>
+            <button class="preset-color-btn" style="background-color: #ef4444;" data-color="#ef4444"></button>
+            <button class="preset-color-btn" style="background-color: #10b981;" data-color="#10b981"></button>
+            <button class="preset-color-btn" style="background-color: #f59e0b;" data-color="#f59e0b"></button>
+            <button class="preset-color-btn" style="background-color: #8b5cf6;" data-color="#8b5cf6"></button>
+            <button class="preset-color-btn" style="background-color: #ec4899;" data-color="#ec4899"></button>
+            <button class="preset-color-btn" style="background-color: #06b6d4;" data-color="#06b6d4"></button>
+            <button class="preset-color-btn" style="background-color: #ffffff;" data-color="#ffffff"></button>
+            <button class="preset-color-btn" style="background-color: #9ca3af;" data-color="#9ca3af"></button>
+            <button class="preset-color-btn" style="background-color: #111827;" data-color="#111827"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selection Actions (Crop) -->
+      <div class="panel-section" id="crop-section" style="display: none;">
+        <h3 class="panel-title">選択範囲の操作</h3>
+        <button class="primary-btn" id="btn-crop">
+          <span class="btn-icon"><i data-lucide="crop"></i></span>
+          範囲内をキリトリ
+        </button>
+        <button class="secondary-btn" id="btn-crop-outside" style="margin-top: 8px;">
+          <span class="btn-icon"><i data-lucide="scissors"></i></span>
+          範囲外をキリトリ
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Footer (Status Bar) -->
+  <footer>
+    <div class="status-left">
+      <span id="status-size">サイズ: 0 x 0</span>
+      <span id="status-tool">ツール: 未選択</span>
+    </div>
+    <div class="status-right">
+      <span id="status-coords">X: 0, Y: 0</span>
+      <span>MosaicPaint v1.0</span>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast-notification">
+    <i data-lucide="check-circle-2"></i>
+    <span id="toast-message">貼り付けました</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
