@@ -599,20 +599,9 @@ function handleMouseDown(e) {
     ctx.beginPath();
     ctx.moveTo(canvasStartX, canvasStartY);
   } else if (currentTool === 'mosaic-rect') {
-    selectionBox.style.display = 'block';
-    selectionBox.style.left = `${containerStartX}px`;
-    selectionBox.style.top = `${containerStartY}px`;
-    selectionBox.style.width = '0px';
-    selectionBox.style.height = '0px';
+    // MouseDown/TouchStart ではリセットしない（MouseMoveによる5px以上のドラッグ開始時にリセット・描画を行う）
   } else if (currentTool === 'select') {
-    selectionBox.style.display = 'block';
-    selectionBox.style.left = `${containerStartX}px`;
-    selectionBox.style.top = `${containerStartY}px`;
-    selectionBox.style.width = '0px';
-    selectionBox.style.height = '0px';
-    btnCrop.disabled = true;
-    btnCropOutside.disabled = true;
-    selectedArea = null;
+    // 同上（誤タップで既に存在する選択枠が消えるのを完全に防止する）
   }
 }
 
@@ -658,10 +647,19 @@ function handleMouseMove(e) {
     const width = Math.abs(containerCurrX - containerStartX);
     const height = Math.abs(containerCurrY - containerStartY);
     
-    selectionBox.style.left = `${left}px`;
-    selectionBox.style.top = `${top}px`;
-    selectionBox.style.width = `${width}px`;
-    selectionBox.style.height = `${height}px`;
+    // 5px以上の移動があって初めて古い選択枠を解除し、新規の枠描画を画面に表示する
+    if (width > 5 || height > 5) {
+      if (currentTool === 'select' && selectedArea) {
+        selectedArea = null;
+        btnCrop.disabled = true;
+        btnCropOutside.disabled = true;
+      }
+      selectionBox.style.display = 'block';
+      selectionBox.style.left = `${left}px`;
+      selectionBox.style.top = `${top}px`;
+      selectionBox.style.width = `${width}px`;
+      selectionBox.style.height = `${height}px`;
+    }
   } else if (currentTool === 'rect' || currentTool === 'ellipse') {
     // Redraw snapshot image before painting active drag shape
     ctx.putImageData(previewImageData, 0, 0);
