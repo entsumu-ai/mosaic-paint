@@ -55,10 +55,8 @@ let initialZoomLevel = 1.0;
 let isPinching = false;
 let originalCanvas = null;
 let originalCtx = null;
-let initialTouchCenterX = 0;
-let initialTouchCenterY = 0;
-let initialScrollLeft = 0;
-let initialScrollTop = 0;
+let touchAnchorCanvasX = 0;
+let touchAnchorCanvasY = 0;
 
 let isDrawing = false;
 let canvasStartX = 0;
@@ -1135,15 +1133,16 @@ function handleTouchStart(e) {
     initialTouchDistance = Math.hypot(dx, dy);
     initialZoomLevel = zoomLevel;
 
-    // 2つのタッチ点の中心座標（重心）を計算（パン移動用）
-    initialTouchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    initialTouchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-    // ワークスペースの現在のスクロール位置を記録
+    // 2つのタッチ点の中心座標（重心）に対応する画像上のピクセル座標（アンカー）を計算
     const workspace = document.querySelector('.workspace');
     if (workspace) {
-      initialScrollLeft = workspace.scrollLeft;
-      initialScrollTop = workspace.scrollTop;
+      const rect = workspace.getBoundingClientRect();
+      const startCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      const startCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      
+      // 指でつまみ始めた箇所の、キャンバス上のピクセル座標をアンカーとして記録
+      touchAnchorCanvasX = (startCenterX + workspace.scrollLeft) / zoomLevel;
+      touchAnchorCanvasY = (startCenterY + workspace.scrollTop) / zoomLevel;
     }
     
     e.preventDefault();
@@ -1167,7 +1166,10 @@ function handleTouchStart(e) {
 
 function handleTouchMove(e) {
   if (e.touches.length === 2 && isPinching) {
-    // --- 1. ピンチズーム処理 ---
+    const workspace = document.querySelector('.workspace');
+    if (!workspace) return;
+    
+    // --- 1. ピンチズーム計算（倍率決定） ---
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     const currentDistance = Math.hypot(dx, dy);
@@ -1179,18 +1181,15 @@ function handleTouchMove(e) {
       applyZoom();
     }
 
-    // --- 2. パン移動（スクロール）処理 ---
-    const currentCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    const currentCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    // --- 2. アンカー座標を指の中央位置に固定（ズーム＆パン同期） ---
+    // 現在の2本の指の重心（ワークスペース相対）
+    const rect = workspace.getBoundingClientRect();
+    const currCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+    const currCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
     
-    const deltaX = currentCenterX - initialTouchCenterX;
-    const deltaY = currentCenterY - initialTouchCenterY;
-    
-    const workspace = document.querySelector('.workspace');
-    if (workspace) {
-      workspace.scrollLeft = initialScrollLeft - deltaX;
-      workspace.scrollTop = initialScrollTop - deltaY;
-    }
+    // 最初につまんだ箇所の画像ピクセルが、現在の指の中心に一致するようにスクロール位置を補正
+    workspace.scrollLeft = touchAnchorCanvasX * zoomLevel - currCenterX;
+    workspace.scrollTop = touchAnchorCanvasY * zoomLevel - currCenterY;
     
     e.preventDefault();
   } else if (e.touches.length === 1 && isDrawing && !isPinching) {
