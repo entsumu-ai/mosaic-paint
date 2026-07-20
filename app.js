@@ -882,9 +882,9 @@ function confirmClearCanvas() {
 }
 
 // --- Export Function ---
-function saveImage() {
+async function saveImage() {
   if (welcomeScreen.classList.contains('hidden') === false) return;
-  const link = document.createElement('a');
+  
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -892,9 +892,34 @@ function saveImage() {
   const hh = String(now.getHours()).padStart(2, '0');
   const min = String(now.getMinutes()).padStart(2, '0');
   const sec = String(now.getSeconds()).padStart(2, '0');
+  const filename = `mosaic-paint-${yyyy}${mm}${dd}-${hh}${min}${sec}.png`;
   
-  link.download = `mosaic-paint-${yyyy}${mm}${dd}-${hh}${min}${sec}.png`;
-  link.href = canvas.toDataURL('image/png');
+  const dataUrl = canvas.toDataURL('image/png');
+  
+  // スマホ・タブレット（Web Share API が使え、ファイルを共有できる場合）
+  if (navigator.share && navigator.canShare) {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], filename, { type: 'image/png' });
+      
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'MosaicPaintで編集した画像',
+          text: 'MosaicPaintで編集した画像'
+        });
+        showToast('保存・共有メニューを開きました');
+        return;
+      }
+    } catch (err) {
+      console.log('Web Share API error, fallback to download:', err);
+    }
+  }
+  
+  // PCや非対応ブラウザ用フォールバック
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = dataUrl;
   link.click();
   showToast('画像を保存しました');
 }
