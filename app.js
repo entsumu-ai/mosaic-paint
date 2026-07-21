@@ -1347,6 +1347,32 @@ function getFitZoomLevel(w, h) {
   return Math.max(0.2, Math.min(1.0, fitScale));
 }
 
+// --- License Modal Handling ---
+const btnLicense = document.getElementById('btn-license');
+const licenseModal = document.getElementById('license-modal');
+const btnCloseLicense = document.getElementById('btn-close-license');
+
+if (btnLicense && licenseModal && btnCloseLicense) {
+  const openLicenseModal = (e) => {
+    e.preventDefault();
+    licenseModal.classList.add('show');
+  };
+  const closeLicenseModal = () => {
+    licenseModal.classList.remove('show');
+  };
+  
+  btnLicense.addEventListener('click', openLicenseModal);
+  btnLicense.addEventListener('touchstart', openLicenseModal, { passive: false });
+  btnCloseLicense.addEventListener('click', closeLicenseModal);
+  
+  // Close when clicking modal backdrop overlay
+  licenseModal.addEventListener('click', (e) => {
+    if (e.target === licenseModal) {
+      closeLicenseModal();
+    }
+  });
+}
+
 // Initialize Application
 initEvents();
 setTool('brush');

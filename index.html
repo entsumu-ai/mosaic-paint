@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MosaicPaint - モザイク機能付きペイントアプリ</title>
   <link rel="icon" href="app_icon.png">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -240,7 +240,7 @@
     </div>
     <div class="status-right">
       <span id="status-coords">X: 0, Y: 0</span>
-      <span>MosaicPaint v1.0</span>
+      <span>MosaicPaint v1.0</span> | <span id="btn-license" style="cursor: pointer; text-decoration: underline;">ライセンス</span>
     </div>
   </footer>
 
@@ -253,6 +253,44 @@
   <!-- Touch Brush Cursor (for Mobile Pointer) -->
   <div id="touch-brush-cursor" class="touch-brush-cursor"></div>
 
-  <script src="app.js?v=13"></script>
+  <!-- License/Credits Modal -->
+  <div class="modal-overlay" id="license-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>ライセンスとクレジット</h3>
+        <button class="modal-close-btn" id="btn-close-license">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 15px; margin-bottom: 6px;"><strong>MosaicPaint</strong></p>
+        <p style="color: var(--text-secondary); margin-bottom: 12px;">Copyright &copy; 2026 entsuru_lab. All rights reserved.</p>
+        <p>本ソフトウェアは、どなたでも無償で自由にご利用いただけます。画像モザイク処理やペイント作業に自由にお役立てください。</p>
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;">
+        <p style="font-weight: 600; margin-bottom: 8px;">使用している外部ライブラリ・アセット:</p>
+        
+        <div class="license-block">
+          <p><strong>Lucide Icons</strong> (Icons Library)</p>
+          <p style="color: var(--text-secondary); font-size: 11px;">License: ISC License</p>
+          <pre>
+Copyright (c) 2020, Lucide Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS.</pre>
+        </div>
+        
+        <div class="license-block" style="margin-top: 12px;">
+          <p><strong>Inter Font / Outfit Font</strong> (Typography)</p>
+          <p style="color: var(--text-secondary); font-size: 11px;">License: SIL Open Font License 1.1</p>
+          <p style="margin-top: 4px;">本ソフトウェアで使用しているフォントは、SIL Open Font License 1.1 のもとで提供されており、無償で自由に使用およびアプリ内に埋め込むことが許可されています。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=14"></script>
 </body>
 </html>
