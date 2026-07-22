@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MosaicPaint - モザイク機能付きペイントアプリ</title>
   <link rel="icon" href="app_icon.png">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -219,12 +219,12 @@
         <div class="panel-section" id="crop-section" style="display: none;">
           <h3 class="panel-title">選択範囲の操作</h3>
           <button class="primary-btn" id="btn-crop">
-            <span class="btn-icon"><i data-lucide="crop"></i></span>
-            範囲内をキリトリ
+            <span class="btn-icon"><i data-lucide="scissors"></i></span>
+            選択範囲を消去
           </button>
           <button class="secondary-btn" id="btn-crop-outside" style="margin-top: 8px;">
-            <span class="btn-icon"><i data-lucide="scissors"></i></span>
-            範囲外をキリトリ
+            <span class="btn-icon"><i data-lucide="crop"></i></span>
+            画像をトリミング
           </button>
         </div>
       </div>
@@ -291,6 +291,6 @@ MERCHANTABILITY AND FITNESS.</pre>
     </div>
   </div>
 
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

@@ -57,6 +57,10 @@ let originalCanvas = null;
 let originalCtx = null;
 let touchAnchorCanvasX = 0;
 let touchAnchorCanvasY = 0;
+let latestTouchDistance = 0;
+let latestCurrCenterX = 0;
+let latestCurrCenterY = 0;
+let zoomUpdatePending = false;
 
 let isDrawing = false;
 let canvasStartX = 0;
@@ -1005,10 +1009,10 @@ function handleCropClick() {
   originalCtx.drawImage(canvas, 0, 0);
 
   saveHistory();
-  showToast('範囲内をキリトリしました');
+  showToast('選択範囲を消去しました');
 }
 
-// Crop outside: keep only the selected area, clear everything around it (canvas size kept)
+// Crop outside: Resize the canvas itself to fit the selected bounds (Trimming)
 function handleCropOutsideClick() {
   if (!selectedArea) return;
 
@@ -1024,26 +1028,39 @@ function handleCropOutsideClick() {
     return;
   }
 
-  // Save the selected pixels, wipe the whole canvas, then restore them in place
-  const keep = ctx.getImageData(rx, ry, rw, rh);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.putImageData(keep, rx, ry);
+  // 1. 選択範囲のピクセルデータを一時バッファに保存
+  const croppedData = ctx.getImageData(rx, ry, rw, rh);
 
-  // Clear selection Box (keep crop panel visible so repeated crops work)
+  // 2. メメインキャンバスを切り抜き後のサイズにリサイズ
+  canvas.width = rw;
+  canvas.height = rh;
+
+  // 3. 切り抜いたピクセルデータを左上(0, 0)に描画
+  ctx.putImageData(croppedData, 0, 0);
+
+  // Clear selection Box
   selectionBox.style.display = 'none';
   btnCrop.disabled = true;
   btnCropOutside.disabled = true;
   selectedArea = null;
 
-  // originalCanvas も新しいサイズに更新
+  // 4. 復元用消しゴムのオリジナルキャンバスも、切り抜き後のサイズで更新
   originalCanvas = document.createElement('canvas');
-  originalCanvas.width = canvas.width;
-  originalCanvas.height = canvas.height;
+  originalCanvas.width = rw;
+  originalCanvas.height = rh;
   originalCtx = originalCanvas.getContext('2d');
-  originalCtx.drawImage(canvas, 0, 0);
+  originalCtx.putImageData(croppedData, 0, 0);
 
+  // 5. ステータスバーのサイズテキスト更新
+  statusSize.textContent = `サイズ: ${rw} x ${rh}`;
+
+  // 6. 画像サイズ変更に伴い、ズームレベルを全体表示（オートフィット）に自動再計算
+  zoomLevel = getFitZoomLevel(rw, rh);
+  applyZoom();
+
+  // 7. ヒストリーに状態を保存して完了
   saveHistory();
-  showToast('範囲外をキリトリしました');
+  showToast('画像をトリミングしました');
 }
 
 // Change the canvas cursor to match the active tool.
@@ -1168,6 +1185,11 @@ function handleTouchStart(e) {
       // 指でつまみ始めた箇所の、キャンバス上のピクセル座標をアンカーとして記録
       touchAnchorCanvasX = (startCenterX + workspace.scrollLeft) / zoomLevel;
       touchAnchorCanvasY = (startCenterY + workspace.scrollTop) / zoomLevel;
+
+      // 最新のタッチ状況を記録
+      latestTouchDistance = initialTouchDistance;
+      latestCurrCenterX = startCenterX;
+      latestCurrCenterY = startCenterY;
     }
     
     e.preventDefault();
@@ -1194,27 +1216,21 @@ function handleTouchMove(e) {
     const workspace = document.querySelector('.workspace');
     if (!workspace) return;
     
-    // --- 1. ピンチズーム計算（倍率決定） ---
+    // 現在の2点間の距離
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
-    const currentDistance = Math.hypot(dx, dy);
-    
-    if (initialTouchDistance > 0) {
-      const scale = currentDistance / initialTouchDistance;
-      // 0.2倍〜4.0倍の範囲で拡大縮小
-      zoomLevel = Math.max(0.2, Math.min(4.0, initialZoomLevel * scale));
-      applyZoom();
-    }
+    latestTouchDistance = Math.hypot(dx, dy);
 
-    // --- 2. アンカー座標を指の中央位置に固定（ズーム＆パン同期） ---
     // 現在の2本の指の重心（ワークスペース相対）
     const rect = workspace.getBoundingClientRect();
-    const currCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-    const currCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+    latestCurrCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+    latestCurrCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
     
-    // 最初につまんだ箇所の画像ピクセルが、現在の指の中心に一致するようにスクロール位置を補正
-    workspace.scrollLeft = touchAnchorCanvasX * zoomLevel - currCenterX;
-    workspace.scrollTop = touchAnchorCanvasY * zoomLevel - currCenterY;
+    // 描画間引き（requestAnimationFrame）を使用して実際のズーム処理を呼び出す
+    if (!zoomUpdatePending) {
+      zoomUpdatePending = true;
+      requestAnimationFrame(updateZoomFromTouch);
+    }
     
     e.preventDefault();
   } else if (e.touches.length === 1 && isDrawing && !isPinching) {
@@ -1231,6 +1247,45 @@ function handleTouchMove(e) {
     }
     updateTouchCursor(touch.clientX, touch.clientY);
     handleMouseMove(pseudoEvent);
+  }
+}
+
+// ズーム更新処理（requestAnimationFrame 用）
+function updateZoomFromTouch() {
+  if (!isPinching) {
+    zoomUpdatePending = false;
+    return;
+  }
+
+  const workspace = document.querySelector('.workspace');
+  if (!workspace || initialTouchDistance <= 0) {
+    zoomUpdatePending = false;
+    return;
+  }
+
+  // タッチ距離から算出した目標のズームレベル
+  const scale = latestTouchDistance / initialTouchDistance;
+  const targetZoom = Math.max(0.2, Math.min(4.0, initialZoomLevel * scale));
+
+  // イージング（補間率 0.45）を適用し、指の微小なブレを吸収する
+  const diff = targetZoom - zoomLevel;
+  if (Math.abs(diff) > 0.001) {
+    zoomLevel = zoomLevel + diff * 0.45;
+  } else {
+    zoomLevel = targetZoom;
+  }
+
+  applyZoom();
+
+  // 最初につまんだピクセルアンカーが、現在の指の中心に一致するようにスクロール位置を補正
+  workspace.scrollLeft = touchAnchorCanvasX * zoomLevel - latestCurrCenterX;
+  workspace.scrollTop = touchAnchorCanvasY * zoomLevel - latestCurrCenterY;
+
+  // 差分がまだある場合は次のフレームでも継続して補間アニメーションを呼ぶ
+  if (Math.abs(diff) > 0.001 && isPinching) {
+    requestAnimationFrame(updateZoomFromTouch);
+  } else {
+    zoomUpdatePending = false;
   }
 }
 
