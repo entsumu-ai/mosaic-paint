@@ -181,12 +181,12 @@ function initEvents() {
 
   // Zoom Controls Events
   btnZoomIn.addEventListener('click', () => {
-    zoomLevel = Math.min(4.0, zoomLevel + 0.1);
+    zoomLevel = Math.min(8.0, zoomLevel + 0.1);
     applyZoom();
   });
 
   btnZoomOut.addEventListener('click', () => {
-    zoomLevel = Math.max(0.2, zoomLevel - 0.1);
+    zoomLevel = Math.max(0.05, zoomLevel - 0.1);
     applyZoom();
   });
 
@@ -200,9 +200,9 @@ function initEvents() {
     if (welcomeScreen.classList.contains('hidden') === false) return;
     e.preventDefault();
     if (e.deltaY < 0) {
-      zoomLevel = Math.min(4.0, zoomLevel + 0.1);
+      zoomLevel = Math.min(8.0, zoomLevel + 0.1);
     } else {
-      zoomLevel = Math.max(0.2, zoomLevel - 0.1);
+      zoomLevel = Math.max(0.05, zoomLevel - 0.1);
     }
     applyZoom();
   }, { passive: false });
@@ -1265,7 +1265,7 @@ function updateZoomFromTouch() {
 
   // タッチ距離から算出した目標のズームレベル
   const scale = latestTouchDistance / initialTouchDistance;
-  const targetZoom = Math.max(0.2, Math.min(4.0, initialZoomLevel * scale));
+  const targetZoom = Math.max(0.05, Math.min(8.0, initialZoomLevel * scale));
 
   // イージング（補間率 0.45）を適用し、指の微小なブレを吸収する
   const diff = targetZoom - zoomLevel;
@@ -1398,8 +1398,8 @@ function getFitZoomLevel(w, h) {
   const scaleY = maxH / h;
   const fitScale = Math.min(scaleX, scaleY);
   
-  // 100% (1.0) を上限とし、0.2未満にならないように
-  return Math.max(0.2, Math.min(1.0, fitScale));
+  // 100% (1.0) を上限とし、0.05 (5%) 未満にならないように
+  return Math.max(0.05, Math.min(1.0, fitScale));
 }
 
 // --- License Modal Handling ---
